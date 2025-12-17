@@ -12,6 +12,12 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+type ChatMessage = {
+  id: number;
+  type: "user" | "agent";
+  content: string;
+  timestamp: Date;
+};
 
 export default function AIAgentUI() {
   const [messages, setMessages] = useState([
@@ -25,7 +31,7 @@ export default function AIAgentUI() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -79,21 +85,22 @@ export default function AIAgentUI() {
       };
 
       setMessages((prev) => [...prev, agentMessage]);
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage: ChatMessage = {
         id: Date.now() + 2,
         type: "agent",
-        content: `❌ Error: ${error.message}`,
+        content: `❌ Error: ${
+          error instanceof Error ? error.message : "Something went wrong"
+        }`,
         timestamp: new Date(),
       };
-
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -304,7 +311,7 @@ export default function AIAgentUI() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Type your message..."
-                  rows="1"
+                  rows={1}
                   className="w-full px-4 py-3 bg-transparent resize-none outline-none text-slate-800 placeholder-slate-400"
                   style={{ maxHeight: "120px" }}
                 />

@@ -38,12 +38,16 @@ const perplexitySearch = async (query: string) => {
     // The structure depends on Perplexity API response format
     // Common fields: answer, sources, citations
     return search;
-  } catch (err: any) {
-    console.error("Perplexity search error:", err.message || err);
+  } catch (err: unknown) {
+    console.error(
+      "Perplexity search error:",
+      err instanceof Error ? err.message : err
+    );
 
-    // Return a more informative error message
     throw new Error(
-      `Perplexity search failed: ${err.message || "Unknown error"}`
+      `Perplexity search failed: ${
+        err instanceof Error ? err.message : "Unknown error"
+      }`
     );
   }
 };
@@ -111,13 +115,16 @@ export async function POST(req: NextRequest) {
       success: true,
       output: response.output,
     });
-  } catch (error: any) {
-    console.error("Agent API Error:", error);
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Internal Server Error";
+
+    console.error("Agent API Error:", message);
 
     return NextResponse.json(
       {
         success: false,
-        error: error.message ?? "Internal Server Error",
+        error: message,
       },
       { status: 500 }
     );
