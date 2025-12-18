@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ChatOpenAI } from "@langchain/openai";
 import {
   AgentExecutor,
-  createOpenAIFunctionsAgent,
+  createToolCallingAgent,
 } from "@langchain/classic/agents";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
@@ -62,7 +62,9 @@ const llm = new ChatOpenAI({
 /* ---------------- Tool ---------------- */
 const perplexityTool = new DynamicStructuredTool({
   name: "perplexity_search",
-  description: "Search the web using Perplexity to find current information",
+  description:
+    "Search the web using Perplexity to find information of " +
+    new Date().getFullYear(),
   schema: z.object({
     query: z.string().describe("The search query to look up"),
   }),
@@ -76,10 +78,12 @@ const perplexityTool = new DynamicStructuredTool({
 const prompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    "You are a helpful research assistant. Use the perplexity_search tool when you need to find current information.",
+    "You are a helpful research assistant. Use the perplexity search tool when you need to find data information of " +
+      new Date().getFullYear() +
+      " year data",
   ],
-  ["human", "{input}"],
   new MessagesPlaceholder("agent_scratchpad"),
+  ["human", "{input}"],
 ]);
 
 /* ---------------- API Handler ---------------- */
@@ -94,7 +98,7 @@ export async function POST(req: NextRequest) {
 
     const tools = [perplexityTool];
 
-    const agent = await createOpenAIFunctionsAgent({
+    const agent = await createToolCallingAgent({
       llm,
       tools,
       prompt,
@@ -103,12 +107,16 @@ export async function POST(req: NextRequest) {
     const executor = new AgentExecutor({
       agent,
       tools,
-      verbose: true,
+      // verbose: true,
+      handleParsingErrors: true,
+
+      returnIntermediateSteps: true,
       maxIterations: 5,
     });
 
     const response = await executor.invoke({
       input,
+      agent_scratchpad: [],
     });
 
     return NextResponse.json({
